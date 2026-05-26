@@ -70,13 +70,11 @@ export default function App() {
             {/* Logo */}
             <div style={{ display:"flex", alignItems:"center", gap:10,
               padding:"10px 0", marginRight:24 }}>
-              <img src="/logo.png" alt="Planview"
-                style={{ height:32, width:"auto", objectFit:"contain" }} />
+              <img src="/logo.png" alt="Planview AdaptiveWork"
+                style={{ height:36, width:"auto", objectFit:"contain" }} />
               <div style={{ borderLeft:`1.5px solid ${T.border}`, paddingLeft:10 }}>
-                <div style={{ fontSize:13, fontWeight:800, color:T.text,
-                  letterSpacing:"-0.02em", lineHeight:1.2 }}>AdaptiveWork</div>
-                <div style={{ fontSize:10, color:T.textDim, fontWeight:600,
-                  letterSpacing:"0.04em" }}>INVENTORY</div>
+                <div style={{ fontSize:11, fontWeight:700, color:T.textMid,
+                  letterSpacing:"0.08em" }}>INVENTORY</div>
               </div>
             </div>
 

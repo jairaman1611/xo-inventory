@@ -36,11 +36,11 @@ export function ConnectFlow({ auth, onConnected }) {
       <div style={{ width:"100%", maxWidth:420 }}>
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:32 }}>
-          <img src="/logo.png" alt="Planview"
-            style={{ height:40, width:"auto", objectFit:"contain", marginBottom:16 }} />
-          <div style={{ fontSize:22, fontWeight:800, color:T.text,
-            letterSpacing:"-0.02em" }}>AdaptiveWork Inventory</div>
-          <div style={{ fontSize:13, color:T.textDim, marginTop:6, fontWeight:500 }}>
+          <img src="/logo.png" alt="Planview AdaptiveWork"
+            style={{ height:52, width:"auto", objectFit:"contain", marginBottom:14 }} />
+          <div style={{ fontSize:13, fontWeight:700, color:T.textMid,
+            letterSpacing:"0.1em" }}>INVENTORY</div>
+          <div style={{ fontSize:12, color:T.textDim, marginTop:6, fontWeight:500 }}>
             Global infrastructure dashboard
           </div>
         </div>

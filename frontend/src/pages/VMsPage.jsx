@@ -167,6 +167,15 @@ export function VMsPage({ vms, hosts }) {
                 selected={selected?.id === vm.id}
                 onClick={() => setSelected(selected?.id === vm.id ? null : vm)} />
             ))}
+            {/* ── Inline detail panel — full width below selected row ── */}
+            {selected && pageRows.some(r => r.id === selected.id) && (
+              <tr>
+                <td colSpan={COLUMNS.length} style={{ padding:0, background:T.surface }}>
+                  <InlineDetail vm={selected} hostMap={hostMap}
+                    onClose={() => setSelected(null)} />
+                </td>
+              </tr>
+            )}
             {pageRows.length === 0 && (
               <tr><td colSpan={COLUMNS.length}
                 style={{ textAlign:"center", padding:60, color:T.textDim, fontSize:13 }}>
@@ -197,15 +206,11 @@ export function VMsPage({ vms, hosts }) {
         </div>
       )}
 
-      {/* ── Detail drawer ── */}
-      {selected && (
-        <DetailDrawer vm={selected} hostMap={hostMap} onClose={() => setSelected(null)} />
-      )}
     </div>
   );
 }
 
-/* ── Sub-components (unchanged from previous version) ───────────────────── */
+/* ── Sub-components ──────────────────────────────────────────────────────── */
 function Th({ col, sortKey, sortDir, onSort }) {
   const active = sortKey === col.key;
   return (
@@ -282,112 +287,6 @@ function td(color, mono=false) {
   return { padding:"9px 12px", fontSize:12, color:color||T.textMid,
     fontFamily:mono?"'SF Mono','JetBrains Mono',monospace":undefined,
     verticalAlign:"middle", whiteSpace:"nowrap" };
-}
-
-function DetailDrawer({ vm, hostMap, onClose }) {
-  const sc   = STATUS[vm.power_state] ?? T.textDim;
-  const ipv4 = (vm.ips ?? []).filter(a => !a.includes(":"));
-  const ipv6 = (vm.ips ?? []).filter(a =>  a.includes(":"));
-  const host = hostMap[vm.host_ref];
-
-  return (
-    <>
-      <div onClick={onClose} style={{ position:"fixed", inset:0,
-        background:"rgba(61,0,26,0.25)", backdropFilter:"blur(4px)",
-        zIndex:200, animation:"fadeIn 0.15s ease" }} />
-      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:"min(480px, 100vw)",
-        background:"rgba(255,245,250,0.96)", backdropFilter:"blur(24px)",
-        borderLeft:`1.5px solid ${T.border}`, zIndex:201, overflow:"auto",
-        animation:"slideInRight 0.2s cubic-bezier(.34,1.2,.64,1)",
-        boxShadow:"-8px 0 48px rgba(255,55,95,0.18)" }}>
-
-        <div style={{ background:T.gradPrimary, padding:"24px 24px 20px",
-          position:"sticky", top:0, zIndex:1 }}>
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
-            <div style={{ flex:1 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                <span style={{ padding:"3px 10px", borderRadius:20, fontSize:11,
-                  fontWeight:700, background:"rgba(255,255,255,0.25)", color:"#fff" }}>
-                  {vm.power_state}
-                </span>
-              </div>
-              <div style={{ fontFamily:"'SF Mono','JetBrains Mono',monospace",
-                fontSize:15, fontWeight:800, color:"#fff", wordBreak:"break-all",
-                lineHeight:1.3 }}>{vm.name}</div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)", marginTop:4 }}>{vm.id}</div>
-            </div>
-            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.2)",
-              border:"none", color:"#fff", fontSize:16, cursor:"pointer",
-              borderRadius:"50%", width:32, height:32,
-              display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-          </div>
-        </div>
-
-        <div style={{ padding:"20px 24px" }}>
-          {[
-            { title:"IDENTITY",  color:T.primary,  items:[
-              {l:"OS",    v:vm.os||"—"},
-              {l:"vCPUs", v:vm.vcpus?`${vm.vcpus} cores`:"—", mono:true},
-              {l:"RAM",   v:vm.mem_total_gb?`${vm.mem_total_gb} GB`:"—", mono:true},
-            ], extra: vm.mem_pct != null ? "gauge" : null,
-              tags: vm.tags },
-            { title:"NETWORK",   color:T.accent, ips:{ ipv4, ipv6 }, vlans:vm.vlans },
-            { title:"HOST NODE", color:T.purple, host },
-            { title:"RUNTIME",   color:T.green,  items:[
-              {l:"Power state", v:vm.power_state, accent:sc},
-              {l:"Uptime",      v:vm.uptime_str||"—", mono:true, accent:T.teal},
-              {l:"HA priority", v:vm.ha_restart||"—"},
-            ]},
-          ].map(sec => (
-            <div key={sec.title} style={{ marginBottom:16, padding:"16px 18px", borderRadius:16,
-              background:"rgba(255,255,255,0.8)", border:`1.5px solid ${sec.color}20`,
-              borderTop:`3px solid ${sec.color}` }}>
-              <SectionHead title={sec.title} color={sec.color} />
-
-              {sec.items?.map((it,j) => <KV key={j} label={it.l} value={it.v}
-                mono={it.mono} accent={it.accent} />)}
-
-              {sec.extra==="gauge" && <>
-                <div style={{ display:"flex", justifyContent:"space-between",
-                  fontSize:11, color:T.textDim, margin:"6px 0 4px" }}>
-                  <span>Memory usage</span>
-                  <span style={{ color:T.accent, fontWeight:700 }}>
-                    {vm.mem_used_gb} / {vm.mem_total_gb} GB
-                  </span>
-                </div>
-                <GaugeBar pct={vm.mem_pct} color={T.accent} height={7} />
-              </>}
-
-              {sec.tags?.length > 0 && (
-                <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:4 }}>
-                  {sec.tags.map(t => <Tag key={t} label={t} />)}
-                </div>
-              )}
-
-              {sec.ips && <>
-                {sec.ips.ipv4.length > 0
-                  ? sec.ips.ipv4.map((ip,i) =>
-                      <KV key={i} label={`IPv4 ${i+1}`} value={ip} mono accent={T.accent} />)
-                  : <KV label="IPv4" value="Not available" />}
-                {sec.ips.ipv6.map((ip,i) =>
-                  <KV key={i} label={`IPv6 ${i+1}`} value={ip} mono accent={T.purple} />)}
-                {(sec.vlans||[]).map((v,i) =>
-                  <KV key={i} label={`VLAN ${i+1}`} value={v} mono accent={T.amber} />)}
-              </>}
-
-              {sec.host !== undefined && <>
-                <KV label="Host"     value={sec.host?.name ?? "—"} mono accent={T.purple} />
-                {sec.host?.address    && <KV label="Address"    value={sec.host.address}    mono />}
-                {sec.host?.cpu_count  && <KV label="Host CPUs"  value={`${sec.host.cpu_count} cores`} mono />}
-                {sec.host?.xs_version && <KV label="XS Version" value={sec.host.xs_version} mono />}
-              </>}
-            </div>
-          ))}
-        </div>
-      </div>
-      <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:none}}`}</style>
-    </>
-  );
 }
 
 function ExportMenu({ onExport }) {

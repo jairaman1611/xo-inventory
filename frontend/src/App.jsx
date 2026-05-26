@@ -69,16 +69,14 @@ export default function App() {
 
             {/* Logo */}
             <div style={{ display:"flex", alignItems:"center", gap:10,
-              padding:"14px 0", marginRight:24 }}>
-              <div style={{ width:34, height:34, borderRadius:10,
-                background:T.gradPrimary, display:"flex", alignItems:"center",
-                justifyContent:"center", fontSize:16, fontWeight:900, color:"#fff",
-                boxShadow:`0 4px 12px rgba(255,55,95,0.4)` }}>Χ</div>
-              <div>
-                <div style={{ fontSize:15, fontWeight:800, color:T.text,
-                  letterSpacing:"-0.02em" }}>XO Inventory</div>
-                <div style={{ fontSize:10, color:T.textDim, fontWeight:500,
-                  letterSpacing:"0.04em" }}>XEN ORCHESTRA</div>
+              padding:"10px 0", marginRight:24 }}>
+              <img src="/logo.png" alt="Planview"
+                style={{ height:32, width:"auto", objectFit:"contain" }} />
+              <div style={{ borderLeft:`1.5px solid ${T.border}`, paddingLeft:10 }}>
+                <div style={{ fontSize:13, fontWeight:800, color:T.text,
+                  letterSpacing:"-0.02em", lineHeight:1.2 }}>AdaptiveWork</div>
+                <div style={{ fontSize:10, color:T.textDim, fontWeight:600,
+                  letterSpacing:"0.04em" }}>INVENTORY</div>
               </div>
             </div>
 

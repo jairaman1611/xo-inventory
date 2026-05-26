@@ -66,6 +66,7 @@ def norm_vm(raw: dict, vif_map: dict, network_map: dict) -> dict:
         "tags":           raw.get("tags") or [],
         "host_ref":       raw.get("$container") or raw.get("resident_on", ""),
         "pool_ref":       raw.get("$pool", ""),
+        "dc":             _get_dc(raw.get("name_label") or raw.get("name", "")).get("dc", "Unknown"),
         "ha_restart":     raw.get("ha_restart_priority", ""),
         "template":       raw.get("is_template", False),
         "snapshot":       raw.get("is_snapshot", False) or ("snapshot" in raw.get("type", "").lower()),
@@ -74,21 +75,71 @@ def norm_vm(raw: dict, vif_map: dict, network_map: dict) -> dict:
 
 # ── Hosts ─────────────────────────────────────────────────────────────────────
 
+def _extract_idrac(raw: dict) -> str:
+    """
+    Try common XO / XenCenter locations where iDRAC / BMC IP is stored.
+    Returns empty string if not found.
+    """
+    # 1. XenCenter custom fields stored in other_config
+    oc = raw.get("other_config") or {}
+    for key in ("XenCenter.CustomFields.iDRAC", "XenCenter.CustomFields.idrac",
+                "XenCenter.CustomFields.IDRAC", "XenCenter.CustomFields.BMC",
+                "XenCenter.CustomFields.iLO",  "XenCenter.CustomFields.IPMI",
+                "idrac_ip", "bmc_ip", "ipmi_ip"):
+        val = oc.get(key, "")
+        if val:
+            return val
+    # 2. Sometimes stored directly as tags with prefix "idrac:"
+    for tag in (raw.get("tags") or []):
+        if tag.lower().startswith(("idrac:", "bmc:", "ipmi:", "ilo:")):
+            return tag.split(":", 1)[1].strip()
+    return ""
+
+
+# DC prefix → datacenter mapping
+_DC_MAP = {
+    "nl":  {"dc": "NL", "location": "Netherlands",  "env_prefix": {"nl-stgjob": "EU STG", "nl-job": "EU PRD"}},
+    "sv":  {"dc": "SV", "location": "Sunnyvale",    "env_prefix": {"sv-stgjob": "US STG", "sv-job": "US PRD"}},
+    "uk":  {"dc": "UK", "location": "United Kingdom","env_prefix": {"uk-drjob":  "UK DR",  "uk-job": "UK TB"}},
+    "nj":  {"dc": "NJ", "location": "New Jersey",   "env_prefix": {"nj-drjob":  "NJ DR",  "nj-job": "NJ TB"}},
+}
+
+def _get_dc(name: str) -> dict:
+    """Derive datacenter and environment from hostname prefix (nl1-, sv1-, uk1-, nj1-)."""
+    n = name.lower().lstrip()
+    for prefix, info in _DC_MAP.items():
+        if n.startswith(prefix):
+            # determine environment
+            name_no_num = n.replace("1-","").replace("2-","").replace("3-","")
+            for env_key, env_label in info["env_prefix"].items():
+                if name_no_num.startswith(env_key.replace("-","")) or \
+                   env_key.replace("-","") in name_no_num.replace("-",""):
+                    return {"dc": info["dc"], "location": info["location"], "env": env_label}
+            return {"dc": info["dc"], "location": info["location"], "env": ""}
+    return {"dc": "Unknown", "location": "Unknown", "env": ""}
+
+
 def norm_host(raw: dict, vm_list: list[dict]) -> dict:
     hid        = raw.get("id") or raw.get("uuid", "")
+    name       = raw.get("name_label") or raw.get("name", "")
     mem_total  = raw.get("memory", {}).get("size") or raw.get("memory_total")
     mem_free   = raw.get("memory", {}).get("free")  or raw.get("memory_free")
     mem_used   = (mem_total - mem_free) if (mem_total and mem_free) else None
     cpu_count  = raw.get("CPUs", {}).get("cpu_count") or raw.get("cpu_count")
     cpu_usage  = raw.get("cpus", {}).get("usage")   # 0–1 float from metrics
+    dc_info    = _get_dc(name)
 
     resident_vms = [v for v in vm_list if v.get("host_ref") == hid and v.get("power_state") == "Running"]
 
     return {
         "id":             hid,
-        "name":           raw.get("name_label") or raw.get("name", ""),
+        "name":           name,
         "type":           "host",
         "address":        raw.get("address", ""),
+        "idrac_ip":       _extract_idrac(raw),
+        "dc":             dc_info["dc"],
+        "location":       dc_info["location"],
+        "env":            dc_info["env"],
         "enabled":        raw.get("enabled", True),
         "power_state":    "Online" if raw.get("enabled", True) else "Offline",
         "cpu_count":      cpu_count,

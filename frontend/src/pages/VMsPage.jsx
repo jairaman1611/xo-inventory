@@ -295,7 +295,7 @@ function DetailDrawer({ vm, hostMap, onClose }) {
       <div onClick={onClose} style={{ position:"fixed", inset:0,
         background:"rgba(61,0,26,0.25)", backdropFilter:"blur(4px)",
         zIndex:200, animation:"fadeIn 0.15s ease" }} />
-      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:420,
+      <div style={{ position:"fixed", top:0, right:0, bottom:0, width:"min(480px, 100vw)",
         background:"rgba(255,245,250,0.96)", backdropFilter:"blur(24px)",
         borderLeft:`1.5px solid ${T.border}`, zIndex:201, overflow:"auto",
         animation:"slideInRight 0.2s cubic-bezier(.34,1.2,.64,1)",

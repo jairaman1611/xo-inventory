@@ -147,3 +147,4 @@ curl http://localhost:7755/api/inventory/vms
 # Summary metrics
 curl http://localhost:7755/api/inventory/summary
 ```
+# PR access test

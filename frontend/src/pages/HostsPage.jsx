@@ -134,6 +134,14 @@ export function HostsPage({ hosts }) {
                 selected={selected?.id===h.id}
                 onClick={() => setSelected(selected?.id===h.id ? null : h)} />
             ))}
+            {/* Inline detail panel */}
+            {selected && sorted.some(r => r.id === selected.id) && (
+              <tr>
+                <td colSpan={COLUMNS.length} style={{ padding:0, background:T.surface }}>
+                  <HostInlineDetail host={selected} onClose={() => setSelected(null)} />
+                </td>
+              </tr>
+            )}
             {sorted.length === 0 && (
               <tr><td colSpan={COLUMNS.length}
                 style={{ textAlign:"center", padding:60, color:T.textDim, fontSize:13 }}>
@@ -145,10 +153,6 @@ export function HostsPage({ hosts }) {
         </table>
       </div>
 
-      {/* Detail drawer */}
-      {selected && (
-        <HostDrawer host={selected} onClose={() => setSelected(null)} />
-      )}
     </div>
   );
 }
@@ -279,103 +283,76 @@ function td(color, mono=false) {
 }
 
 /* ── Detail drawer ───────────────────────────────────────────────────────── */
-function HostDrawer({ host:h, onClose }) {
-  const sc    = STATUS[h.power_state] ?? T.textDim;
+function HostInlineDetail({ host:h, onClose }) {
   const dcCol = DC_COLORS[h.dc] || T.primary;
   return (
-    <>
-      <div onClick={onClose} style={{ position:"fixed", inset:0,
-        background:"rgba(61,0,26,0.25)", backdropFilter:"blur(4px)",
-        zIndex:200, animation:"fadeIn 0.15s ease" }} />
-      <div style={{ position:"fixed", top:0, right:0, bottom:0,
-        width:"min(440px, 100vw)",
-        background:"rgba(255,245,250,0.96)", backdropFilter:"blur(24px)",
-        borderLeft:`1.5px solid ${T.border}`, zIndex:201, overflow:"auto",
-        animation:"slideInRight 0.2s cubic-bezier(.34,1.2,.64,1)",
-        boxShadow:"-8px 0 48px rgba(255,55,95,0.18)" }}>
+    <div style={{ borderTop:`2px solid ${dcCol}`, padding:"20px 24px",
+      background:`linear-gradient(135deg,${dcCol}15,${T.accentSoft}20)`,
+      animation:"fadeIn 0.2s ease" }}>
 
-        {/* Header */}
-        <div style={{ background:`linear-gradient(135deg,${dcCol},${dcCol}cc)`,
-          padding:"24px 24px 20px", position:"sticky", top:0, zIndex:1 }}>
-          <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
-            <div style={{ flex:1 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                <span style={{ padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700,
-                  background:"rgba(255,255,255,0.25)", color:"#fff" }}>{h.power_state}</span>
-                <span style={{ padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700,
-                  background:"rgba(255,255,255,0.2)", color:"#fff" }}>{h.dc}</span>
-              </div>
-              <div style={{ fontFamily:"'SF Mono','JetBrains Mono',monospace", fontSize:15,
-                fontWeight:800, color:"#fff", wordBreak:"break-all", lineHeight:1.3 }}>
-                {h.name}
-              </div>
-              {h.env && <div style={{ fontSize:11, color:"rgba(255,255,255,0.8)", marginTop:4 }}>
-                {h.location} · {h.env}
-              </div>}
-            </div>
-            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.2)", border:"none",
-              color:"#fff", fontSize:16, cursor:"pointer", borderRadius:"50%",
-              width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              ✕
-            </button>
-          </div>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+        marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontFamily:"'SF Mono','JetBrains Mono',monospace",
+            fontSize:14, fontWeight:800, color:T.text }}>{h.name}</span>
+          <StatusBadge state={h.power_state} />
+          <span style={{ padding:"2px 9px", borderRadius:50, fontSize:11, fontWeight:800,
+            background:`${dcCol}18`, color:dcCol, border:`1px solid ${dcCol}35` }}>
+            {h.dc}
+          </span>
+          {h.env && <span style={{ fontSize:11, color:T.textDim }}>{h.location} · {h.env}</span>}
         </div>
-
-        <div style={{ padding:"20px 24px" }}>
-          {/* Identity */}
-          <DrawerSection title="IDENTITY" color={T.primary}>
-            <KV label="Name"       value={h.name}        mono />
-            <KV label="Mgmt IP"    value={h.address||"—"} mono accent={T.accent} />
-            <KV label="iDRAC IP"   value={h.idrac_ip||"—"} mono accent={T.teal} />
-            <KV label="DC"         value={h.dc||"—"}     accent={dcCol} />
-            <KV label="Location"   value={h.location||"—"} />
-            <KV label="Env"        value={h.env||"—"}    accent={dcCol} />
-            <KV label="Xen"        value={h.xen_version||"—"} />
-            <KV label="XS Version" value={h.xs_version||"—"} />
-            <KV label="Uptime"     value={h.uptime_str||"—"} mono accent={T.teal} />
-            {h.tags?.length > 0 && (
-              <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
-                {h.tags.map(t => <Tag key={t} label={t} />)}
-              </div>
-            )}
-          </DrawerSection>
-
-          {/* Compute */}
-          <DrawerSection title="COMPUTE" color={T.accent}>
-            <KV label="vCPUs"     value={h.cpu_count||"—"} mono />
-            <KV label="CPU Used"  value={h.cpu_usage_pct!=null?`${h.cpu_usage_pct}%`:"—"}
-              mono accent={T.primary} />
-            {h.cpu_usage_pct != null && (
-              <GaugeBar pct={h.cpu_usage_pct} color={T.primary} height={6} />
-            )}
-            <div style={{ marginTop:10 }} />
-            <KV label="Total RAM" value={h.mem_total_gb?`${h.mem_total_gb} GB`:"—"} mono />
-            <KV label="Used RAM"  value={h.mem_used_gb ?`${h.mem_used_gb} GB` :"—"}
-              mono accent={T.purple} />
-            <KV label="Free RAM"  value={h.mem_free_gb ?`${h.mem_free_gb} GB` :"—"}
-              mono accent={T.green} />
-            {h.mem_pct != null && (
-              <GaugeBar pct={h.mem_pct} color={T.purple} height={6} />
-            )}
-          </DrawerSection>
-
-          {/* Workload */}
-          <DrawerSection title="WORKLOAD" color={T.green}>
-            <KV label="Resident VMs" value={h.resident_vms??0} mono accent={T.accent} />
-            <KV label="HA"           value={h.ha_enabled?"Enabled":"Disabled"}
-              accent={h.ha_enabled?T.green:T.textDim} />
-          </DrawerSection>
-        </div>
+        <button onClick={onClose} style={{ background:`${dcCol}15`,
+          border:`1.5px solid ${dcCol}30`, color:dcCol, borderRadius:50,
+          padding:"4px 12px", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+          ✕ Close
+        </button>
       </div>
-      <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:none}}`}</style>
-    </>
+
+      <div style={{ display:"grid",
+        gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:14 }}>
+
+        <Panel title="IDENTITY" color={T.primary}>
+          <KV label="Mgmt IP"    value={h.address||"—"}    mono accent={T.accent} />
+          <KV label="iDRAC IP"   value={h.idrac_ip||"—"}   mono accent={T.teal} />
+          <KV label="Xen"        value={h.xen_version||"—"} />
+          <KV label="XS Version" value={h.xs_version||"—"} />
+          <KV label="Uptime"     value={h.uptime_str||"—"} mono accent={T.teal} />
+          {h.tags?.length > 0 && (
+            <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
+              {h.tags.map(t => <Tag key={t} label={t} />)}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="COMPUTE" color={T.accent}>
+          <KV label="vCPUs"     value={h.cpu_count||"—"} mono />
+          <KV label="CPU Used"  value={h.cpu_usage_pct!=null?`${h.cpu_usage_pct}%`:"—"}
+            mono accent={T.primary} />
+          {h.cpu_usage_pct != null && <GaugeBar pct={h.cpu_usage_pct} color={T.primary} height={5} />}
+          <div style={{ marginTop:8 }} />
+          <KV label="Total RAM" value={h.mem_total_gb?`${h.mem_total_gb} GB`:"—"} mono />
+          <KV label="Used RAM"  value={h.mem_used_gb?`${h.mem_used_gb} GB`:"—"}  mono accent={T.purple} />
+          <KV label="Free RAM"  value={h.mem_free_gb?`${h.mem_free_gb} GB`:"—"}  mono accent={T.green} />
+          {h.mem_pct != null && <GaugeBar pct={h.mem_pct} color={T.purple} height={5} />}
+        </Panel>
+
+        <Panel title="WORKLOAD" color={T.green}>
+          <KV label="Resident VMs" value={h.resident_vms??0}  mono accent={T.accent} />
+          <KV label="HA"           value={h.ha_enabled?"Enabled":"Disabled"}
+            accent={h.ha_enabled?T.green:T.textDim} />
+          <KV label="Pool"         value={h.pool_ref||"—"}    mono />
+        </Panel>
+      </div>
+    </div>
   );
 }
 
-function DrawerSection({ title, color, children }) {
+function Panel({ title, color, children }) {
   return (
-    <div style={{ marginBottom:16, padding:"16px 18px", borderRadius:16,
-      background:"rgba(255,255,255,0.8)", border:`1.5px solid ${color}20`,
+    <div style={{ background:"rgba(255,255,255,0.85)", borderRadius:14,
+      padding:"14px 16px", border:`1.5px solid ${color}20`,
       borderTop:`3px solid ${color}` }}>
       <SectionHead title={title} color={color} />
       {children}

@@ -64,7 +64,7 @@ export default function App() {
           borderBottom:`1.5px solid ${T.border}`,
           position:"sticky", top:0, zIndex:100,
           boxShadow:`0 2px 20px rgba(255,55,95,0.08)` }}>
-          <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 24px",
+          <div style={{ padding:"0 20px",
             display:"flex", alignItems:"center", gap:0 }}>
 
             {/* Logo */}
@@ -136,7 +136,7 @@ export default function App() {
         </nav>
 
         {/* ── Content ── */}
-        <main style={{ flex:1, padding:"24px", maxWidth:1200, margin:"0 auto", width:"100%" }}>
+        <main style={{ flex:1, padding:"20px 24px", width:"100%" }}>
           {inv.loading && !inv.data && (
             <div style={{ textAlign:"center", paddingTop:100 }}>
               <Spinner />

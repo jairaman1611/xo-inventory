@@ -3,18 +3,18 @@ import { T, STATUS, STATUS_SOFT } from "../theme";
 import { Dot, StatusBadge, GaugeBar, KV, SectionHead, Tag, SearchBar } from "../components/ui";
 
 const COLUMNS = [
-  { key:"name",        label:"Name",        width:200 },
-  { key:"power_state", label:"State",       width:100 },
-  { key:"dc",          label:"DC",          width:70  },
-  { key:"address",     label:"Mgmt IP",     width:130 },
-  { key:"idrac_ip",    label:"iDRAC IP",    width:130 },
-  { key:"resident_vms",label:"VMs",         width:65  },
-  { key:"cpu_count",   label:"CPUs",        width:65  },
+  { key:"name",        label:"Name",        width:170 },
+  { key:"power_state", label:"State",       width:90  },
+  { key:"dc",          label:"DC",          width:55  },
+  { key:"address",     label:"Mgmt IP",     width:115 },
+  { key:"idrac_ip",    label:"iDRAC IP",    width:115 },
+  { key:"resident_vms",label:"VMs",         width:55  },
+  { key:"cpu_count",   label:"CPUs",        width:55  },
   { key:"cpu_pct",     label:"CPU %",       width:90  },
-  { key:"mem_total",   label:"RAM (GB)",    width:90  },
+  { key:"mem_total",   label:"RAM (GB)",    width:80  },
   { key:"mem_pct",     label:"MEM %",       width:90  },
-  { key:"xs_version",  label:"XS Version",  width:120 },
-  { key:"uptime",      label:"Uptime",      width:120 },
+  { key:"xs_version",  label:"XS Version",  width:105 },
+  { key:"uptime",      label:"Uptime",      width:110 },
 ];
 
 function accessor(h, key) {
@@ -118,7 +118,7 @@ export function HostsPage({ hosts }) {
       <div style={{ flex:1, overflow:"auto", borderRadius:16,
         border:`1.5px solid ${T.border}`,
         boxShadow:"0 4px 24px rgba(255,55,95,0.07)" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:1200 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"fixed" }}>
           <thead>
             <tr style={{ background:`linear-gradient(135deg,${T.primarySoft},${T.accentSoft})`,
               position:"sticky", top:0, zIndex:10 }}>

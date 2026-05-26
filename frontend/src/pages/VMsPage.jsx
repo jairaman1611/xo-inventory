@@ -6,15 +6,15 @@ import { FilterPanel, applyFilters, countActive, EMPTY_FILTERS } from "../compon
 
 /* ── Column definitions ──────────────────────────────────────────────────── */
 const COLUMNS = [
-  { key:"name",        label:"Name",         width:220 },
-  { key:"power_state", label:"State",        width:110 },
-  { key:"os",          label:"OS",           width:195 },
-  { key:"ip",          label:"IP Address",   width:135 },
-  { key:"vlan",        label:"Network/VLAN", width:155 },
-  { key:"host",        label:"Host Node",    width:155 },
-  { key:"vcpus",       label:"vCPUs",        width:75  },
-  { key:"mem",         label:"RAM (GB)",     width:88  },
-  { key:"uptime",      label:"Uptime",       width:115 },
+  { key:"name",        label:"Name",         width:180 },
+  { key:"power_state", label:"State",        width:100 },
+  { key:"os",          label:"OS",           width:170 },
+  { key:"ip",          label:"IP Address",   width:120 },
+  { key:"vlan",        label:"Network/VLAN", width:130 },
+  { key:"host",        label:"Host Node",    width:130 },
+  { key:"vcpus",       label:"vCPUs",        width:60  },
+  { key:"mem",         label:"RAM (GB)",     width:80  },
+  { key:"uptime",      label:"Uptime",       width:105 },
 ];
 
 function accessor(vm, key, hostMap) {
@@ -151,7 +151,7 @@ export function VMsPage({ vms, hosts }) {
       <div style={{ flex:1, overflow:"auto", borderRadius:16,
         border:`1.5px solid ${T.border}`,
         boxShadow:"0 4px 24px rgba(255,55,95,0.07)" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:1100 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"fixed" }}>
           <thead>
             <tr style={{ background:`linear-gradient(135deg,${T.primarySoft},${T.accentSoft})`,
               position:"sticky", top:0, zIndex:10 }}>

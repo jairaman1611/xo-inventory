@@ -68,7 +68,16 @@ Extracted from XO host other_config (XenCenter custom fields: iDRAC/BMC/iLO/IPMI
 or from tags with prefix idrac:/bmc:/ilo:
 Shown as clickable link in Hosts grid — opens iDRAC web console in new tab
 
-## Git workflow
+## Branding
+- App name: "PV AdaptiveWork Inventory"
+- Logo: /frontend/public/logo.png (Planview logo, white background, 236×80px)
+- Nav: logo image + "AdaptiveWork / INVENTORY" text beside it
+- Login screen: logo image above title
+
+## Known pending issues
+- VM/Host detail drawer still behaves like a slider on large screens — needs to expand
+  to fill available space rather than fixed width. TODO: replace with inline expanded
+  row or full-width bottom panel instead of side drawer.
 - feature branches only, never commit to main directly
 - PR title format: "feat/fix/chore: short description"
 - Always run `npm run build` before pushing to confirm no compile errors

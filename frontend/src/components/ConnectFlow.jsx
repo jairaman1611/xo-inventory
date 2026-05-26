@@ -34,16 +34,12 @@ export function ConnectFlow({ auth, onConnected }) {
                        radial-gradient(circle at 80% 80%, ${T.accentSoft} 0%, transparent 50%)` }}>
 
       <div style={{ width:"100%", maxWidth:420 }}>
-        {/* Logo blob */}
+        {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:32 }}>
-          <div style={{ display:"inline-flex", width:72, height:72, borderRadius:22,
-            background:T.gradPrimary, alignItems:"center", justifyContent:"center",
-            fontSize:32, marginBottom:16,
-            boxShadow:`0 8px 32px rgba(255,55,95,0.4)` }}>
-            Χ
-          </div>
-          <div style={{ fontSize:26, fontWeight:800, color:T.text,
-            letterSpacing:"-0.03em", lineHeight:1.1 }}>XO Inventory</div>
+          <img src="/logo.png" alt="Planview"
+            style={{ height:40, width:"auto", objectFit:"contain", marginBottom:16 }} />
+          <div style={{ fontSize:22, fontWeight:800, color:T.text,
+            letterSpacing:"-0.02em" }}>AdaptiveWork Inventory</div>
           <div style={{ fontSize:13, color:T.textDim, marginTop:6, fontWeight:500 }}>
             Global infrastructure dashboard
           </div>

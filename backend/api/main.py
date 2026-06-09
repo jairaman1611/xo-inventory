@@ -117,6 +117,58 @@ async def get_summary():
     return data["summary"]
 
 
+
+@app.get("/api/debug/vifs")
+async def debug_vifs():
+    """Temporary debug endpoint — returns raw VIF sample + VM.VIFs list sample."""
+    if not session.connected:
+        raise HTTPException(status_code=403, detail="Not connected to XO")
+    c = session._client
+    vifs_raw = await c.get_vifs()
+    vms_raw  = await c.get_vms()
+
+    # Sample first VIF — show all its keys
+    sample_vif = vifs_raw[0] if vifs_raw else {}
+
+    # Sample first running VM with VIFs
+    sample_vm = next(
+        (v for v in vms_raw if v.get("VIFs") and v.get("power_state","").lower() == "running"),
+        vms_raw[0] if vms_raw else {}
+    )
+
+    # Cross-reference: pick the first VIF ref from that VM and try to find it
+    vm_vif_refs = sample_vm.get("VIFs", [])
+    first_ref   = vm_vif_refs[0] if vm_vif_refs else None
+
+    vif_by_id  = {v.get("id") or v.get("uuid",""): True for v in vifs_raw}
+    vif_by_ref = {v.get("$ref") or v.get("ref",""): True for v in vifs_raw}
+
+    found_by_id  = first_ref in vif_by_id  if first_ref else None
+    found_by_ref = first_ref in vif_by_ref if first_ref else None
+
+    # Show all unique keys present across all VIFs
+    all_keys: set = set()
+    for v in vifs_raw[:20]:
+        all_keys.update(v.keys())
+
+    return {
+        "vif_count":        len(vifs_raw),
+        "vif_keys_seen":    sorted(all_keys),
+        "sample_vif":       {k: sample_vif.get(k) for k in sorted(sample_vif.keys())},
+        "sample_vm_name":   sample_vm.get("name_label") or sample_vm.get("name"),
+        "sample_vm_VIFs":   vm_vif_refs[:5],
+        "first_vif_ref_from_vm": first_ref,
+        "found_in_vif_map_by_id":  found_by_id,
+        "found_in_vif_map_by_ref": found_by_ref,
+        "sample_vif_id":    sample_vif.get("id"),
+        "sample_vif_uuid":  sample_vif.get("uuid"),
+        "sample_vif_$ref":  sample_vif.get("$ref"),
+        "sample_vif_ref":   sample_vif.get("ref"),
+        "sample_vif_ipv4":  sample_vif.get("ipv4_addresses"),
+        "sample_vif_ipv6":  sample_vif.get("ipv6_addresses"),
+    }
+
+
 # ── Serve built React frontend ────────────────────────────────────────────────
 # Resolve path relative to THIS file:
 #   this file  → backend/api/main.py

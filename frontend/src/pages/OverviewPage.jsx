@@ -20,15 +20,30 @@ const DCS = [
 ];
 
 const ENVS = [
-  { id:"US PRD", dc:"SV", label:"US PRD", color:"#3B9EFF" },
-  { id:"US STG", dc:"SV", label:"US STG", color:"#5AC8FA" },
-  { id:"EU PRD", dc:"NL", label:"EU PRD", color:"#FF9F0A" },
-  { id:"EU STG", dc:"NL", label:"EU STG", color:"#FFD60A" },
-  { id:"UK TB",  dc:"UK", label:"UK TB",  color:"#30D158" },
-  { id:"UK DR",  dc:"UK", label:"UK DR",  color:"#34C759" },
-  { id:"NJ TB",  dc:"NJ", label:"NJ TB",  color:"#BF5AF2" },
-  { id:"NJ DR",  dc:"NJ", label:"NJ DR",  color:"#9F7AEA" },
+  { id:"US PRD", dc:"SV", label:"US PRD", color:"#3B9EFF", nameContains:"sv",  nameExclude:"stg" },
+  { id:"US STG", dc:"SV", label:"US STG", color:"#5AC8FA", nameContains:"svstg" },
+  { id:"EU PRD", dc:"NL", label:"EU PRD", color:"#FF9F0A", nameContains:"nl",  nameExclude:"stg" },
+  { id:"EU STG", dc:"NL", label:"EU STG", color:"#FFD60A", nameContains:"nlstg" },
+  { id:"UK TB",  dc:"UK", label:"UK TB",  color:"#30D158", nameContains:"uk",  nameExclude:"dr"  },
+  { id:"UK DR",  dc:"UK", label:"UK DR",  color:"#34C759", nameContains:"ukdr" },
+  { id:"NJ TB",  dc:"NJ", label:"NJ TB",  color:"#BF5AF2", nameContains:"nj",  nameExclude:"dr"  },
+  { id:"NJ DR",  dc:"NJ", label:"NJ DR",  color:"#9F7AEA", nameContains:"njdr" },
 ];
+
+/**
+ * Derive the search string that best matches a given environment when
+ * passed to VMsPage's quick-search box.
+ * e.g. "UK DR" → "uk1-dr" (covers uk1-drjob*, uk1-dr*)
+ */
+function envToSearch(envId) {
+  const prefixMap = {
+    "US PRD": "sv",   "US STG": "sv1-stg",
+    "EU PRD": "nl",   "EU STG": "nl1-stg",
+    "UK TB":  "uk",   "UK DR":  "uk1-dr",
+    "NJ TB":  "nj",   "NJ DR":  "nj1-dr",
+  };
+  return prefixMap[envId] ?? "";
+}
 
 function matchesDC(name, dc) {
   if (!name) return false;
@@ -44,7 +59,7 @@ function getEnv(name) {
   return "Unknown";
 }
 
-export function OverviewPage({ data }) {
+export function OverviewPage({ data, onNavigateToVMs }) {
   if (!data) return null;
   const { vms, hosts, storage, summary } = data;
 
@@ -138,7 +153,17 @@ export function OverviewPage({ data }) {
     Free: s.free_gb ?? 0,
   }));
 
-  const activeDC = DCS.find(d => d.id === selDC) || DCS[0];
+  const activeDC  = DCS.find(d => d.id === selDC) || DCS[0];
+
+  /* ── nav helper ── */
+  const navVMs = onNavigateToVMs ?? (() => {});
+
+  /* Build namePrefix for the current selection (for KPI card clicks) */
+  const curPrefix = selEnv
+    ? envToSearch(selEnv)
+    : selDC !== "ALL"
+      ? DCS.find(d => d.id === selDC)?.prefix ?? ""
+      : "";
 
   return (
     <div>
@@ -212,13 +237,21 @@ export function OverviewPage({ data }) {
             const running = evms.filter(v => v.power_state === "Running").length;
             const dc      = DCS.find(d => d.id === e.dc);
             return (
-              <div key={e.id} onClick={() => { setSelDC(e.dc); setSelEnv(e.id); }}
+              <div key={e.id}
+                onClick={() => navVMs({ search: envToSearch(e.id) })}
+                title={`View all ${e.label} VMs →`}
                 style={{ borderRadius:16, padding:"14px 16px", cursor:"pointer",
                   background:`linear-gradient(135deg,${e.color}22,${e.color}10)`,
                   border:`1.5px solid ${e.color}40`, transition:"all 0.15s",
                   boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}
-                onMouseEnter={e2 => e2.currentTarget.style.transform="translateY(-2px)"}
-                onMouseLeave={e2 => e2.currentTarget.style.transform="none"}>
+                onMouseEnter={ev => {
+                  ev.currentTarget.style.transform="translateY(-2px)";
+                  ev.currentTarget.style.boxShadow=`0 6px 20px ${e.color}30`;
+                }}
+                onMouseLeave={ev => {
+                  ev.currentTarget.style.transform="none";
+                  ev.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.06)";
+                }}>
                 <div style={{ display:"flex", justifyContent:"space-between",
                   alignItems:"flex-start", marginBottom:8 }}>
                   <span style={{ fontSize:18 }}>{dc?.flag}</span>
@@ -231,6 +264,9 @@ export function OverviewPage({ data }) {
                 <div style={{ fontSize:10, color:T.textMid, marginTop:2 }}>
                   <span style={{ color:T.green, fontWeight:700 }}>{running}</span> running
                 </div>
+                {/* drill-down hint */}
+                <div style={{ fontSize:9, color:e.color, marginTop:6, fontWeight:600,
+                  opacity:0.7, letterSpacing:"0.04em" }}>VIEW ALL →</div>
               </div>
             );
           })}
@@ -241,16 +277,36 @@ export function OverviewPage({ data }) {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(145px,1fr))",
         gap:12, marginBottom:20 }}>
         {[
-          { icon:"🖥",  label:"Total VMs",   val:S.total_vms,    grad:T.gradPrimary },
-          { icon:"▶",   label:"Running",      val:S.running_vms,  grad:T.gradGreen   },
-          { icon:"🖧",  label:"Hosts",        val:S.total_hosts,  grad:T.gradAccent  },
-          { icon:"⚙",  label:"vCPUs (live)", val:S.total_vcpus,  grad:`linear-gradient(135deg,${T.purple},#9F7AEA)` },
-          { icon:"💾",  label:"Mem Used",    val:`${S.mem_used_gb}GB`, grad:`linear-gradient(135deg,${T.teal},#32ADE6)` },
-          { icon:"📦",  label:"Stor Used",   val:`${S.stor_used_gb}GB`, grad:T.gradAmber },
+          { icon:"🖥",  label:"Total VMs",   val:S.total_vms,
+            nav: { search: curPrefix } },
+          { icon:"▶",   label:"Running",      val:S.running_vms,
+            nav: { search: curPrefix, powerState:["Running"] } },
+          { icon:"🖧",  label:"Hosts",        val:S.total_hosts,
+            nav: null  /* hosts tab — no VM nav */ },
+          { icon:"⚙",  label:"vCPUs (live)", val:S.total_vcpus,
+            nav: { search: curPrefix, powerState:["Running"] } },
+          { icon:"💾",  label:"Mem Used",    val:`${S.mem_used_gb}GB`, nav: null },
+          { icon:"📦",  label:"Stor Used",   val:`${S.stor_used_gb}GB`, nav: null },
         ].map(k => (
-          <div key={k.label} style={{ borderRadius:18, padding:"16px 14px",
-            background:k.grad, textAlign:"center",
-            boxShadow:"0 4px 20px rgba(0,0,0,0.12)" }}>
+          <div key={k.label}
+            onClick={k.nav ? () => navVMs(k.nav) : undefined}
+            title={k.nav ? "Click to view VMs →" : undefined}
+            style={{ borderRadius:18, padding:"16px 14px",
+              background:k.grad || (k.nav ? gradForLabel(k.label) : gradForLabel(k.label)),
+              textAlign:"center",
+              boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
+              cursor: k.nav ? "pointer" : "default",
+              transition: k.nav ? "transform 0.15s, box-shadow 0.15s" : undefined,
+            }}
+            onMouseEnter={k.nav ? e => {
+              e.currentTarget.style.transform="translateY(-3px) scale(1.03)";
+              e.currentTarget.style.boxShadow="0 8px 28px rgba(0,0,0,0.18)";
+            } : undefined}
+            onMouseLeave={k.nav ? e => {
+              e.currentTarget.style.transform="none";
+              e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.12)";
+            } : undefined}
+          >
             <div style={{ fontSize:22, marginBottom:4 }}>{k.icon}</div>
             <div style={{ fontSize:20, fontWeight:800, color:"#fff",
               fontFamily:"'SF Mono','JetBrains Mono',monospace",
@@ -259,11 +315,15 @@ export function OverviewPage({ data }) {
             </div>
             <div style={{ fontSize:10, color:"rgba(255,255,255,0.8)",
               fontWeight:600, letterSpacing:"0.06em", marginTop:2 }}>{k.label}</div>
+            {k.nav && (
+              <div style={{ fontSize:8, color:"rgba(255,255,255,0.6)", marginTop:4,
+                letterSpacing:"0.06em", fontWeight:600 }}>VIEW VMs →</div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* ── Charts row 1 ── */}
+      {/* ── VM state pie — clicking a segment drills to that state ── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
         <ChartCard title="RESOURCE UTILISATION" accent={T.primary}>
           <ResponsiveContainer width="100%" height={200}>
@@ -287,11 +347,15 @@ export function OverviewPage({ data }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="VM STATE BREAKDOWN" accent={T.accent}>
+        <ChartCard title="VM STATE BREAKDOWN — click to filter" accent={T.accent}>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={vmStates} cx="50%" cy="50%" innerRadius={50} outerRadius={85}
-                paddingAngle={4} dataKey="value">
+                paddingAngle={4} dataKey="value"
+                onClick={(seg) => seg && navVMs({
+                  search: curPrefix, powerState: [seg.name]
+                })}
+                style={{ cursor:"pointer" }}>
                 {vmStates.map((e,i) => <Cell key={i} fill={e.fill} />)}
               </Pie>
               <Tooltip content={<CustomTip />} />
@@ -300,7 +364,12 @@ export function OverviewPage({ data }) {
           </ResponsiveContainer>
           <div style={{ display:"flex", justifyContent:"center", gap:20, marginTop:4 }}>
             {vmStates.map(s => (
-              <div key={s.name} style={{ textAlign:"center" }}>
+              <div key={s.name}
+                onClick={() => navVMs({ search: curPrefix, powerState: [s.name] })}
+                title={`View ${s.name} VMs →`}
+                style={{ textAlign:"center", cursor:"pointer" }}
+                onMouseEnter={e => e.currentTarget.style.opacity="0.7"}
+                onMouseLeave={e => e.currentTarget.style.opacity="1"}>
                 <div style={{ fontSize:20, fontWeight:800, color:s.fill,
                   fontFamily:"'SF Mono','JetBrains Mono',monospace" }}>{s.value}</div>
                 <div style={{ fontSize:9, color:T.textDim, fontWeight:600,
@@ -376,6 +445,19 @@ export function OverviewPage({ data }) {
       </div>
     </div>
   );
+}
+
+/* map KPI card label → gradient (replaces inline grad prop) */
+function gradForLabel(label) {
+  const map = {
+    "Total VMs":   T.gradPrimary,
+    "Running":     T.gradGreen,
+    "Hosts":       T.gradAccent,
+    "vCPUs (live)":`linear-gradient(135deg,${T.purple},#9F7AEA)`,
+    "Mem Used":    `linear-gradient(135deg,${T.teal},#32ADE6)`,
+    "Stor Used":   T.gradAmber,
+  };
+  return map[label] || T.gradPrimary;
 }
 
 function ChartCard({ title, accent, children, style }) {

@@ -49,6 +49,7 @@ function doExport(rows, fmt) {
     Environment:   h.env ?? "—",
     "Mgmt IP":     h.address ?? "—",
     "iDRAC IP":    h.idrac_ip || "—",
+    "Serial / S-Tag": h.serial_number || "—",
     "Resident VMs":h.resident_vms ?? 0,
     "vCPUs":       h.cpu_count ?? "",
     "CPU %":       h.cpu_usage_pct ?? "",
@@ -368,6 +369,14 @@ function HostRow({ host:h, index, selected, onClick }) {
           <span style={{ fontFamily:"'SF Mono','JetBrains Mono',monospace", fontSize:12,
             fontWeight:700, color:T.text, overflow:"hidden", textOverflow:"ellipsis",
             whiteSpace:"nowrap" }}>{h.name}</span>
+          {h.serial_number && (
+            <span title="Serial / Service Tag" style={{
+              fontSize:"0.67rem", fontFamily:"'SF Mono','JetBrains Mono',monospace",
+              color:T.amber, background:`${T.amber}15`,
+              border:`1px solid ${T.amber}35`, borderRadius:4,
+              padding:"1px 5px", letterSpacing:"0.03em", flexShrink:0,
+            }}>{h.serial_number}</span>
+          )}
         </div>
       </td>
       <td style={td()}><StatusBadge state={h.power_state} /></td>
@@ -466,6 +475,9 @@ function HostInlineDetail({ host:h, onClose }) {
 
         <Panel title="IDENTITY" color={T.primary}>
           <KV label="Mgmt IP"    value={h.address||"—"}    mono accent={T.accent} />
+          {h.serial_number && (
+            <KV label="Serial / S-Tag" value={h.serial_number} mono accent={T.amber} />
+          )}
           <KV label="iDRAC IP"   value={h.idrac_ip||"—"}   mono accent={T.teal} />
           <KV label="Xen"        value={h.xen_version||"—"} />
           <KV label="XS Version" value={h.xs_version||"—"} />

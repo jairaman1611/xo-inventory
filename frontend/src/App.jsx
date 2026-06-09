@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { T } from "./theme";
 import { useAuth, useInventory } from "./hooks/useInventory";
 import { ConnectFlow }   from "./components/ConnectFlow";
@@ -7,6 +7,7 @@ import { VMsPage }       from "./pages/VMsPage";
 import { HostsPage }     from "./pages/HostsPage";
 import { StoragePage, NetworksPage } from "./pages/StorageNetworkPages";
 import { Spinner }       from "./components/ui";
+import { EMPTY_FILTERS } from "./components/FilterPanel";
 
 const TABS = [
   { id:"overview", label:"Overview",  icon:"📊" },
@@ -21,10 +22,43 @@ export default function App() {
   const inv  = useInventory();
   const [tab, setTab] = useState("overview");
 
+  // Lifted VM filter + search so OverviewPage can navigate with pre-set filters
+  const [vmFilters, setVmFilters] = useState(EMPTY_FILTERS);
+  const [vmSearch,  setVmSearch]  = useState("");
+
+  /**
+   * Navigate from Overview widgets to the VMs tab with pre-applied filters.
+   * @param {object} opts
+   *   opts.namePrefix  – value for the name "starts with" filter  e.g. "uk1-dr"
+   *   opts.powerState  – array of power states e.g. ["Running"]
+   *   opts.search      – quick search string (optional extra)
+   */
+  const navigateToVMs = useCallback(({ namePrefix, powerState, search } = {}) => {
+    const f = { ...EMPTY_FILTERS };
+    if (namePrefix) {
+      f.name = { mode: "starts", value: namePrefix };
+    }
+    if (powerState?.length) {
+      f.powerState = { logic: "OR", values: powerState };
+    }
+    setVmFilters(f);
+    setVmSearch(search ?? "");
+    setTab("vms");
+  }, []);
+
   useEffect(() => { auth.checkStatus(); }, []);
   useEffect(() => {
     if (auth.status === "connected" && !inv.data && !inv.loading) inv.load();
   }, [auth.status]);
+
+  // When user manually switches to a different tab (not vms), reset the VM filters
+  const handleTabChange = useCallback((id) => {
+    if (id !== "vms") {
+      setVmFilters(EMPTY_FILTERS);
+      setVmSearch("");
+    }
+    setTab(id);
+  }, []);
 
   const gs = `
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -84,7 +118,7 @@ export default function App() {
                 const active = tab === t.id;
                 const cnt    = tabCount(t.id);
                 return (
-                  <button key={t.id} onClick={() => setTab(t.id)} style={{
+                  <button key={t.id} onClick={() => handleTabChange(t.id)} style={{
                     padding:"16px 14px", background:"transparent", border:"none",
                     borderBottom:`2.5px solid ${active ? T.primary : "transparent"}`,
                     color: active ? T.primary : T.textDim,
@@ -154,8 +188,9 @@ export default function App() {
           )}
           {inv.data && (
             <>
-              {tab==="overview" && <OverviewPage data={inv.data} />}
-              {tab==="vms"      && <VMsPage vms={inv.data.vms} hosts={inv.data.hosts} />}
+              {tab==="overview" && <OverviewPage data={inv.data} onNavigateToVMs={navigateToVMs} />}
+              {tab==="vms"      && <VMsPage vms={inv.data.vms} hosts={inv.data.hosts}
+                                    initialFilters={vmFilters} initialSearch={vmSearch} />}
               {tab==="hosts"    && <HostsPage hosts={inv.data.hosts} />}
               {tab==="storage"  && <StoragePage storage={inv.data.storage} />}
               {tab==="networks" && <NetworksPage networks={inv.data.networks} />}

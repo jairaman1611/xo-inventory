@@ -34,12 +34,16 @@ def norm_vm(raw: dict, vif_map: dict, network_map: dict) -> dict:
     mem_used  = raw.get("memory", {}).get("usage")
     mem_total = raw.get("memory", {}).get("size")
 
-    # Gather IPs + VLAN names from VIFs
-    ips, vlans = [], []
+    # IPs come directly from VM.addresses: {"0/ipv4/0": "1.2.3.4", "0/ipv6/0": "fe80::..."}
+    addresses = raw.get("addresses") or {}
+    ipv4s = [v for k, v in addresses.items() if "/ipv4/" in k]
+    ipv6s = [v for k, v in addresses.items() if "/ipv6/" in k]
+    ips   = list(dict.fromkeys(ipv4s + ipv6s))  # ipv4 first, deduplicated
+
+    # VLAN names still come from VIFs (network membership, not IPs)
+    vlans = []
     for vif_ref in raw.get("VIFs", []):
         vif = vif_map.get(vif_ref, {})
-        ips.extend(vif.get("ipv4_addresses") or [])
-        ips.extend(vif.get("ipv6_addresses") or [])
         net = network_map.get(vif.get("$network") or vif.get("network", ""), {})
         name = net.get("name_label") or net.get("name") or ""
         if name and name not in vlans:

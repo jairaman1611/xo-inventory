@@ -153,8 +153,21 @@ class XOSession:
                 c.get_networks(), c.get_pools(), c.get_vifs(), c.get_pifs(),
             )
 
-        vif_map = {v.get("id") or v.get("uuid", ""): v for v in (vifs_raw or [])}
-        pif_map = {p.get("id") or p.get("uuid", ""): p for p in (pifs_raw or [])}
+        # Index VIFs by both their uuid ("id") AND their OpaqueRef ("$ref").
+        # VM.VIFs lists OpaqueRef strings, so we need the $ref key for lookups;
+        # the uuid key is kept for any future direct-id lookups.
+        vif_map = {}
+        for v in (vifs_raw or []):
+            key_id  = v.get("id") or v.get("uuid", "")
+            key_ref = v.get("$ref") or v.get("ref", "")
+            if key_id:  vif_map[key_id]  = v
+            if key_ref: vif_map[key_ref] = v
+        pif_map = {}
+        for p in (pifs_raw or []):
+            key_id  = p.get("id") or p.get("uuid", "")
+            key_ref = p.get("$ref") or p.get("ref", "")
+            if key_id:  pif_map[key_id]  = p
+            if key_ref: pif_map[key_ref] = p
         net_map = {n.get("id") or n.get("uuid", ""): n for n in (nets_raw or [])}
 
         vms   = [norm_vm(v, vif_map, net_map) for v in (vms_raw   or [])

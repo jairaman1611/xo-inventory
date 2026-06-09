@@ -118,6 +118,37 @@ async def get_summary():
 
 
 
+
+@app.get("/api/debug/vm-ips")
+async def debug_vm_ips():
+    """Debug: show exactly where IPs live on a running VM object."""
+    if not session.connected:
+        raise HTTPException(status_code=403, detail="Not connected to XO")
+    c = session._client
+    vms_raw = await c.get_vms()
+
+    # Find a running VM
+    running = [v for v in vms_raw
+               if v.get("power_state","").lower() == "running"
+               and not v.get("is_template") and not v.get("is_snapshot")]
+    if not running:
+        return {"error": "no running VMs found"}
+
+    vm = running[0]
+    # Return full key list + any key that might hold IP data
+    ip_candidates = {k: v for k, v in vm.items()
+                     if any(x in k.lower() for x in
+                            ["ip","addr","guest","net","vif","xen","tool"])}
+    return {
+        "vm_name":      vm.get("name_label") or vm.get("name"),
+        "all_keys":     sorted(vm.keys()),
+        "ip_candidates": ip_candidates,
+        "VIFs_field":   vm.get("VIFs"),
+        "addresses":    vm.get("addresses"),
+        "guest_metrics":vm.get("guest_metrics"),
+    }
+
+
 @app.get("/api/debug/vifs")
 async def debug_vifs():
     """Temporary debug endpoint — returns raw VIF sample + VM.VIFs list sample."""

@@ -123,6 +123,23 @@ def _get_dc(name: str) -> dict:
     return {"dc": "Unknown", "location": "Unknown", "env": ""}
 
 
+def _extract_serial(raw: dict) -> str:
+    """
+    Extract hardware serial number / service tag from bios_strings.
+    Dell iDRAC uses enclosure-asset-tag (short 7-char service tag).
+    HP/Lenovo/Supermicro typically use system-serial-number.
+    Returns empty string when not present or meaningless.
+    """
+    _PLACEHOLDER = {"", "0", "n/a", "not specified", "to be filled by o.e.m.",
+                    "default string", "system serial number", "none"}
+    bios = raw.get("bios_strings") or {}
+    serial = (
+        bios.get("system-serial-number", "")
+        or bios.get("enclosure-asset-tag", "")
+    ).strip()
+    return "" if serial.lower() in _PLACEHOLDER else serial
+
+
 def norm_host(raw: dict, vm_list: list[dict]) -> dict:
     hid        = raw.get("id") or raw.get("uuid", "")
     name       = raw.get("name_label") or raw.get("name", "")
@@ -141,6 +158,7 @@ def norm_host(raw: dict, vm_list: list[dict]) -> dict:
         "type":           "host",
         "address":        raw.get("address", ""),
         "idrac_ip":       _extract_idrac(raw),
+        "serial_number":  _extract_serial(raw),
         "dc":             dc_info["dc"],
         "location":       dc_info["location"],
         "env":            dc_info["env"],

@@ -61,13 +61,13 @@ function doExport(rows, hostMap, fmt) {
 const PAGE_SIZE = 100;
 
 /* ── Main component ──────────────────────────────────────────────────────── */
-export function VMsPage({ vms, hosts }) {
+export function VMsPage({ vms, hosts, initialFilters, initialSearch }) {
   const hostMap = useMemo(() =>
     Object.fromEntries((hosts ?? []).map(h => [h.id, h])), [hosts]);
 
-  const [search,      setSearch]      = useState("");
-  const [filters,     setFilters]     = useState(EMPTY_FILTERS);
-  const [showFilters, setShowFilters] = useState(false);
+  const [search,      setSearch]      = useState(initialSearch ?? "");
+  const [filters,     setFilters]     = useState(initialFilters ?? EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(() => countActive(initialFilters ?? EMPTY_FILTERS) > 0);
   const [sortKey,     setSortKey]     = useState("name");
   const [sortDir,     setSortDir]     = useState("asc");
   const [selected,    setSelected]    = useState(null);

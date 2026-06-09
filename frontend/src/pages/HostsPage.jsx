@@ -10,6 +10,7 @@ const COLUMNS = [
   { key:"dc",           label:"DC",         width:55  },
   { key:"address",      label:"Mgmt IP",    width:115 },
   { key:"idrac_ip",     label:"iDRAC IP",   width:115 },
+  { key:"serial_number", label:"Service Tag", width:105 },
   { key:"resident_vms", label:"VMs",        width:55  },
   { key:"cpu_count",    label:"CPUs",       width:55  },
   { key:"cpu_pct",      label:"CPU %",      width:90  },
@@ -26,6 +27,7 @@ function accessor(h, key) {
     case "dc":           return h.dc ?? "";
     case "address":      return h.address ?? "";
     case "idrac_ip":     return h.idrac_ip ?? "";
+    case "serial_number": return h.serial_number ?? "";
     case "resident_vms": return h.resident_vms ?? 0;
     case "cpu_count":    return h.cpu_count ?? 0;
     case "cpu_pct":      return h.cpu_usage_pct ?? 0;
@@ -369,14 +371,7 @@ function HostRow({ host:h, index, selected, onClick }) {
           <span style={{ fontFamily:"'SF Mono','JetBrains Mono',monospace", fontSize:12,
             fontWeight:700, color:T.text, overflow:"hidden", textOverflow:"ellipsis",
             whiteSpace:"nowrap" }}>{h.name}</span>
-          {h.serial_number && (
-            <span title="Serial / Service Tag" style={{
-              fontSize:"0.67rem", fontFamily:"'SF Mono','JetBrains Mono',monospace",
-              color:T.amber, background:`${T.amber}15`,
-              border:`1px solid ${T.amber}35`, borderRadius:4,
-              padding:"1px 5px", letterSpacing:"0.03em", flexShrink:0,
-            }}>{h.serial_number}</span>
-          )}
+
         </div>
       </td>
       <td style={td()}><StatusBadge state={h.power_state} /></td>
@@ -395,6 +390,11 @@ function HostRow({ host:h, index, selected, onClick }) {
                 fontFamily:"'SF Mono','JetBrains Mono',monospace", fontSize:11 }}>
               {h.idrac_ip} ↗
             </a>
+          : <span style={{ color:T.textDim }}>—</span>}
+      </td>
+      <td style={td(T.amber, true)}>
+        {h.serial_number
+          ? <span style={{ userSelect:"all" }}>{h.serial_number}</span>
           : <span style={{ color:T.textDim }}>—</span>}
       </td>
       <td style={{ ...td(T.accent,true), textAlign:"center" }}>{h.resident_vms??0}</td>

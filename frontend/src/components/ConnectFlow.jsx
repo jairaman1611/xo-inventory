@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { T } from "../theme";
 import { Input, Button } from "./ui";
+
+const HOST_SUGGESTIONS = [
+  "https://10.92.48.204",
+];
 
 export function ConnectFlow({ auth, onConnected }) {
   const [mode, setMode]     = useState("password");
@@ -68,6 +72,77 @@ export function ConnectFlow({ auth, onConnected }) {
   );
 }
 
+function HostInput({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={wrapRef} style={{ marginBottom:16, position:"relative" }}>
+      <div style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em",
+        color:T.textDim, marginBottom:6 }}>XO HOST URL</div>
+      <div style={{ position:"relative", display:"flex", alignItems:"center" }}>
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onFocus={() => setOpen(true)}
+          placeholder="https://xoa.yourdomain.com"
+          style={{
+            width:"100%", padding:"11px 40px 11px 14px", borderRadius:14,
+            border:`1.5px solid ${T.border}`, fontSize:13, color:T.text,
+            background:"rgba(255,255,255,0.9)", outline:"none", boxSizing:"border-box",
+            fontFamily:"'SF Mono','JetBrains Mono',monospace",
+            transition:"border-color 0.15s",
+          }}
+          onMouseEnter={e => e.target.style.borderColor = T.primary}
+          onMouseLeave={e => e.target.style.borderColor = T.border}
+        />
+        {/* chevron */}
+        <span
+          onClick={() => setOpen(o => !o)}
+          style={{ position:"absolute", right:12, cursor:"pointer",
+            color:T.textDim, fontSize:11, userSelect:"none",
+            transform: open ? "rotate(180deg)" : "none",
+            transition:"transform 0.15s" }}>▼</span>
+      </div>
+
+      {open && HOST_SUGGESTIONS.length > 0 && (
+        <div style={{
+          position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:100,
+          background:"rgba(255,255,255,0.97)", backdropFilter:"blur(16px)",
+          border:`1.5px solid ${T.border}`, borderRadius:14, overflow:"hidden",
+          boxShadow:"0 8px 32px rgba(255,55,95,0.15)",
+        }}>
+          <div style={{ padding:"8px 14px 4px", fontSize:10, fontWeight:800,
+            letterSpacing:"0.08em", color:T.textDim }}>SUGGESTED HOSTS</div>
+          {HOST_SUGGESTIONS.map(s => (
+            <button key={s}
+              onMouseDown={() => { onChange(s); setOpen(false); }}
+              style={{
+                display:"block", width:"100%", padding:"10px 14px",
+                textAlign:"left", background:"transparent", border:"none",
+                color:T.text, fontSize:13, fontWeight:500, cursor:"pointer",
+                fontFamily:"'SF Mono','JetBrains Mono',monospace",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = T.primarySoft}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CredsStep({ mode, setMode, host, setHost, user, setUser,
   pass, setPass, token, setToken, ssl, setSsl, auth, onSubmit }) {
 
@@ -88,8 +163,7 @@ function CredsStep({ mode, setMode, host, setHost, user, setUser,
         ))}
       </div>
 
-      <Input label="XO HOST URL" value={host} onChange={setHost}
-        placeholder="https://xoa.yourdomain.com" />
+      <HostInput value={host} onChange={setHost} />
 
       {mode === "password" ? (
         <>

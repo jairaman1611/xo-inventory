@@ -9,7 +9,7 @@ const COLUMNS = [
   { key:"name",        label:"Name",         width:180 },
   { key:"power_state", label:"State",        width:100 },
   { key:"os",          label:"OS",           width:170 },
-  { key:"ip",          label:"IP Address",   width:120 },
+  { key:"ip",          label:"IP Address",   width:150 },
   { key:"vlan",        label:"Network/VLAN", width:130 },
   { key:"host",        label:"Host Node",    width:130 },
   { key:"vcpus",       label:"vCPUs",        width:60  },
@@ -259,8 +259,11 @@ function DataRow({ vm, hostMap, index, selected, onClick }) {
         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
           display:"block", maxWidth:185, fontSize:12 }}>{vm.os || "—"}</span>
       </td>
-      <td style={td(T.accent, true)}>
-        {ipv4[0] ?? <span style={{ color:T.textDim }}>—</span>}
+      <td style={td(T.accent, true)} title={ipv4.join(", ") || undefined}>
+        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+          display:"block", maxWidth:155 }}>
+          {ipv4[0] ?? <span style={{ color:T.textDim }}>—</span>}
+        </span>
       </td>
       <td style={td(T.amber, true)}>
         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",

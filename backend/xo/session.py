@@ -54,13 +54,6 @@ class XOSession:
 
     async def connect_password(self, host: str, username: str, password: str,
                                verify_ssl: bool = False) -> dict:
-        """
-        Store credentials and open the WebSocket.
-        Always transitions to 'needs_otp' — XO requires OTP even if MFA is
-        not configured (in that case submit_otp('') will be called with empty string,
-        but in practice we always ask the user).
-        The actual sign-in happens in submit_otp().
-        """
         async with self._lock:
             await self._close()
             client = XOClient(host, verify_ssl=verify_ssl)
@@ -81,9 +74,6 @@ class XOSession:
         return self.status_dict()
 
     async def submit_otp(self, otp: str) -> dict:
-        """
-        Send username + password + otp together — the only call that works with MFA.
-        """
         async with self._lock:
             if self.state.status != "needs_otp" or not self._client:
                 return {"status": "error", "error": "No pending session — connect first"}
@@ -153,8 +143,24 @@ class XOSession:
                 c.get_networks(), c.get_pools(), c.get_vifs(), c.get_pifs(),
             )
 
-        vif_map = {v.get("id") or v.get("uuid", ""): v for v in (vifs_raw or [])}
-        pif_map = {p.get("id") or p.get("uuid", ""): p for p in (pifs_raw or [])}
+        # Index VIFs by BOTH uuid ("id") AND OpaqueRef ("$ref").
+        # VM.VIFs contains OpaqueRef strings, so without the $ref key every
+        # VIF lookup returns {} and ipv4_addresses is always empty.
+        vif_map: dict = {}
+        for v in (vifs_raw or []):
+            key_id  = v.get("id") or v.get("uuid", "")
+            key_ref = v.get("$ref") or v.get("ref", "")
+            if key_id:  vif_map[key_id]  = v
+            if key_ref: vif_map[key_ref] = v
+
+        # Same dual-key fix for PIFs (network VLAN lookups use $ref too)
+        pif_map: dict = {}
+        for p in (pifs_raw or []):
+            key_id  = p.get("id") or p.get("uuid", "")
+            key_ref = p.get("$ref") or p.get("ref", "")
+            if key_id:  pif_map[key_id]  = p
+            if key_ref: pif_map[key_ref] = p
+
         net_map = {n.get("id") or n.get("uuid", ""): n for n in (nets_raw or [])}
 
         vms   = [norm_vm(v, vif_map, net_map) for v in (vms_raw   or [])

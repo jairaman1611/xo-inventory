@@ -7,13 +7,13 @@ const HOST_SUGGESTIONS = [
 ];
 
 export function ConnectFlow({ auth, onConnected }) {
-  const [mode, setMode]     = useState("password");
-  const [host, setHost]     = useState("https://");
-  const [user, setUser]     = useState("");
-  const [pass, setPass]     = useState("");
-  const [token, setToken]   = useState("");
-  const [otp, setOtp]       = useState("");
-  const [ssl, setSsl]       = useState(false);
+  const [mode, setMode]   = useState("password");
+  const [host, setHost]   = useState("https://");
+  const [user, setUser]   = useState("");
+  const [pass, setPass]   = useState("");
+  const [token, setToken] = useState("");
+  const [otp, setOtp]     = useState("");
+  const [ssl, setSsl]     = useState(false);
 
   const step = auth.status === "needs_otp" ? "otp" : "creds";
 
@@ -72,11 +72,11 @@ export function ConnectFlow({ auth, onConnected }) {
   );
 }
 
-function HostInput({ value, onChange }) {
+/* ── Host URL input with dropdown suggestions ───────────────────────────── */
+function HostInput({ value, onChange, onEnter }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e) {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
@@ -94,24 +94,21 @@ function HostInput({ value, onChange }) {
           value={value}
           onChange={e => onChange(e.target.value)}
           onFocus={() => setOpen(true)}
+          onKeyDown={e => { if (e.key === "Enter") { setOpen(false); onEnter?.(); } }}
           placeholder="https://xoa.yourdomain.com"
           style={{
             width:"100%", padding:"11px 40px 11px 14px", borderRadius:14,
             border:`1.5px solid ${T.border}`, fontSize:13, color:T.text,
             background:"rgba(255,255,255,0.9)", outline:"none", boxSizing:"border-box",
-            fontFamily:"'SF Mono','JetBrains Mono',monospace",
-            transition:"border-color 0.15s",
+            fontFamily:"'SF Mono','JetBrains Mono',monospace", transition:"border-color 0.15s",
           }}
           onMouseEnter={e => e.target.style.borderColor = T.primary}
           onMouseLeave={e => e.target.style.borderColor = T.border}
         />
-        {/* chevron */}
-        <span
-          onClick={() => setOpen(o => !o)}
+        <span onClick={() => setOpen(o => !o)}
           style={{ position:"absolute", right:12, cursor:"pointer",
             color:T.textDim, fontSize:11, userSelect:"none",
-            transform: open ? "rotate(180deg)" : "none",
-            transition:"transform 0.15s" }}>▼</span>
+            transform: open ? "rotate(180deg)" : "none", transition:"transform 0.15s" }}>▼</span>
       </div>
 
       {open && HOST_SUGGESTIONS.length > 0 && (
@@ -143,8 +140,14 @@ function HostInput({ value, onChange }) {
   );
 }
 
+/* ── Creds step ─────────────────────────────────────────────────────────── */
 function CredsStep({ mode, setMode, host, setHost, user, setUser,
   pass, setPass, token, setToken, ssl, setSsl, auth, onSubmit }) {
+
+  // Submit on Enter from any field
+  function handleEnter(e) {
+    if (e.key === "Enter" && !auth.loading) onSubmit();
+  }
 
   const tabStyle = active => ({
     flex:1, padding:"9px", borderRadius:10, fontSize:12, fontWeight:700,
@@ -163,14 +166,14 @@ function CredsStep({ mode, setMode, host, setHost, user, setUser,
         ))}
       </div>
 
-      <HostInput value={host} onChange={setHost} />
+      <HostInput value={host} onChange={setHost} onEnter={onSubmit} />
 
       {mode === "password" ? (
         <>
           <Input label="USERNAME" value={user} onChange={setUser}
-            placeholder="username or email" />
+            placeholder="username or email" onKeyDown={handleEnter} />
           <Input label="PASSWORD" type="password" value={pass} onChange={setPass}
-            placeholder="••••••••" />
+            placeholder="••••••••" onKeyDown={handleEnter} />
           <div style={{ padding:"10px 14px", marginBottom:16, borderRadius:12,
             background:T.accentSoft, fontSize:12, color:T.accent, fontWeight:500,
             lineHeight:1.5 }}>
@@ -179,7 +182,7 @@ function CredsStep({ mode, setMode, host, setHost, user, setUser,
         </>
       ) : (
         <Input label="API TOKEN" type="password" value={token} onChange={setToken}
-          placeholder="Paste XO API token (no MFA needed)" />
+          placeholder="Paste XO API token (no MFA needed)" onKeyDown={handleEnter} />
       )}
 
       <label style={{ display:"flex", alignItems:"center", gap:8,
@@ -200,6 +203,7 @@ function CredsStep({ mode, setMode, host, setHost, user, setUser,
   );
 }
 
+/* ── OTP step ───────────────────────────────────────────────────────────── */
 function OtpStep({ otp, setOtp, auth, onSubmit, onBack }) {
   return (
     <>
@@ -216,8 +220,13 @@ function OtpStep({ otp, setOtp, auth, onSubmit, onBack }) {
       <div style={{ marginBottom:20 }}>
         <input
           type="text" inputMode="numeric" maxLength={6}
-          value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g,""))}
+          value={otp}
+          onChange={e => setOtp(e.target.value.replace(/\D/g,""))}
+          onKeyDown={e => {
+            if (e.key === "Enter" && otp.length === 6 && !auth.loading) onSubmit();
+          }}
           placeholder="000000"
+          autoFocus
           style={{ width:"100%", textAlign:"center", fontSize:32, fontWeight:800,
             letterSpacing:"0.25em", padding:"14px",
             background:"rgba(255,255,255,0.9)", border:`2px solid ${otp.length===6 ? T.primary : T.border}`,

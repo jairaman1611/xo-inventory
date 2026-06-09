@@ -77,12 +77,13 @@ export function Tag({ label }) {
 }
 
 /* ── Text input ───────────────────────────────────────────────────────────── */
-export function Input({ label, type = "text", value, onChange, placeholder }) {
+export function Input({ label, type = "text", value, onChange, placeholder, onKeyDown }) {
   return (
     <label style={{ display:"block", marginBottom:14 }}>
       <div style={{ fontSize:11, fontWeight:600, color:T.textMid,
         letterSpacing:"0.06em", marginBottom:5 }}>{label}</div>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         style={{ width:"100%", background:"rgba(255,255,255,0.9)",
           border:`1.5px solid ${T.border}`, borderRadius:12,
